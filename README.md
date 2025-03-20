@@ -208,3 +208,13 @@ http://your-ec2-ip-address/
 ```
 Your Laravel project is now successfully deployed! 🚀
 
+## **1️⃣7️⃣ Helping Links**
+
+```
+https://77page.in/sanjaypanihar/Njg2OTU=
+```
+```
+https://gist.github.com/ErxrilOwl/b0b82a09c7fae99de14c88898282d8d4#deployment-guide-to-laravel---ubuntu
+```
+
+
