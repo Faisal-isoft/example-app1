@@ -18,7 +18,7 @@ jobs:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ubuntu
-          APP_DIR: /var/www/html/example-app1  # Correct Laravel project directory
+          APP_DIR: /var/www/html/example-app1  # Laravel project directory
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
@@ -28,10 +28,16 @@ jobs:
           
           # Deploy script
           ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << EOF
+            sudo chown -R ubuntu:ubuntu $APP_DIR  # Ensure user has correct ownership
+            sudo chmod -R 775 $APP_DIR  # Set proper permissions
+
             cd $APP_DIR || exit 1  # Ensure we're in the correct directory
             git reset --hard  # Reset any changes
             git pull origin master
+
+            sudo chown -R ubuntu:ubuntu $APP_DIR  # Ensure user owns files before running composer
             composer install --no-dev --optimize-autoloader
+
             php artisan migrate --force
             php artisan config:clear
             php artisan cache:clear
@@ -41,7 +47,12 @@ jobs:
             php artisan route:cache
             php artisan view:cache
             php artisan optimize
+
+            # Fix permissions again for Apache
             sudo chown -R www-data:www-data $APP_DIR
             sudo chmod -R 775 $APP_DIR/storage $APP_DIR/bootstrap/cache
+            sudo chmod -R 777 $APP_DIR/storage/logs
+            sudo chmod -R 777 $APP_DIR/storage/framework
+
             sudo systemctl restart apache2
           EOF
