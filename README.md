@@ -1,66 +1,210 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Deploy Laravel Project on AWS EC2 with Apache
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## **1️⃣ Create an AWS EC2 Instance**
+1. Log in to AWS Management Console.
+2. Navigate to **EC2** > **Instances**.
+3. Click **Launch Instance**.
+4. Choose **Ubuntu 22.04 LTS** as the OS.
+5. Select an instance type (t2.micro for free tier).
+6. Configure key pair (download `.pem` file for SSH access).
+7. Configure security group:
+   - **Port 22** (SSH) - Your IP only
+   - **Port 80** (HTTP) - Anywhere
+   - **Port 443** (HTTPS) - Anywhere
+8. Launch the instance.
 
-## About Laravel
+## **2️⃣ Connect to the EC2 Instance via SSH**
+```bash
+ssh -i your-key.pem ubuntu@your-ec2-ip-address
+```
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## **3️⃣ Update the System**
+```bash
+sudo apt update && sudo apt upgrade -y
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## **4️⃣ Install Apache**
+```bash
+sudo apt install apache2 -y
+sudo systemctl enable apache2
+sudo systemctl start apache2
+```
+Check if Apache is running:
+```bash
+sudo systemctl status apache2
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## **5️⃣ Install PHP and Required Extensions**
+```bash
+sudo apt install php php-cli php-mbstring php-xml php-bcmath php-zip php-curl php-tokenizer php-fileinfo php-redis php-gd unzip -y
+```
+Check PHP version:
+```bash
+php -v
+```
 
-## Learning Laravel
+## **6️⃣ Install MySQL Database**
+```bash
+sudo apt install mysql-server -y
+sudo systemctl enable mysql
+sudo systemctl start mysql
+```
+Secure MySQL:
+```bash
+sudo mysql_secure_installation
+```
+Login to MySQL:
+```bash
+sudo mysql -u root -p
+```
+Create a database and user:
+```sql
+CREATE DATABASE laravel_db;
+CREATE USER 'laravel_user'@'localhost' IDENTIFIED BY 'yourpassword';
+GRANT ALL PRIVILEGES ON laravel_db.* TO 'laravel_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## **7️⃣ Install Composer**
+```bash
+cd ~
+sudo apt install curl -y
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
+Check version:
+```bash
+composer -V
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## **8️⃣ Clone Laravel Project from GitHub**
+```bash
+cd /var/www/html
+sudo git clone https://github.com/your-repo/example-app.git
+cd example-app
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## **9️⃣ Set Correct Permissions**
+```bash
+sudo chown -R www-data:www-data /var/www/html/example-app
+sudo chmod -R 775 /var/www/html/example-app/storage /var/www/html/example-app/bootstrap/cache
+```
 
-## Laravel Sponsors
+## **🔟 Configure Laravel Environment**
+```bash
+cp .env.example .env
+nano .env
+```
+Update database details:
+```
+DB_DATABASE=laravel_db
+DB_USERNAME=laravel_user
+DB_PASSWORD=yourpassword
+```
+Save and exit (`CTRL + X`, then `Y`, then `Enter`).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Generate application key:
+```bash
+php artisan key:generate
+```
 
-### Premium Partners
+## **1️⃣1️⃣ Install Dependencies and Migrate Database**
+```bash
+composer install
+php artisan migrate
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## **1️⃣2️⃣ Set Up Apache Virtual Host**
+```bash
+sudo nano /etc/apache2/sites-available/000-default.conf
+```
+Update `DocumentRoot` to Laravel’s public folder:
+```
+DocumentRoot /var/www/html/example-app/public
+<Directory /var/www/html/example-app/public>
+    AllowOverride All
+    Require all granted
+</Directory>
+```
+Save and exit.
 
-## Contributing
+Enable Apache mod_rewrite:
+```bash
+sudo a2enmod rewrite
+sudo systemctl restart apache2
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## **1️⃣3️⃣ Set Up Redis for Caching & Queues**
+```bash
+sudo apt install redis-server -y
+sudo systemctl enable redis
+sudo systemctl start redis
+```
+Check Redis is running:
+```bash
+redis-cli ping  # It should return "PONG"
+```
+Update `.env` file:
+```
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+```
+Restart Laravel queue:
+```bash
+php artisan queue:restart
+```
 
-## Code of Conduct
+## **1️⃣4️⃣ Set Up File Storage & Image Uploads**
+Create a symbolic link for storage:
+```bash
+php artisan storage:link
+```
+If it fails, manually create a link:
+```bash
+ln -s /var/www/html/example-app/storage/app/public /var/www/html/example-app/public/storage
+```
+Ensure correct permissions:
+```bash
+sudo chown -R www-data:www-data /var/www/html/example-app/storage
+sudo chmod -R 775 /var/www/html/example-app/storage
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## **1️⃣5️⃣ Optimize Laravel for Production**
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
 
-## Security Vulnerabilities
+## **1️⃣6️⃣ Set Up Laravel Scheduler & Queue Worker**
+Edit crontab:
+```bash
+crontab -e
+```
+Add this line:
+```
+* * * * * php /var/www/html/example-app/artisan schedule:run >> /dev/null 2>&1
+```
+Start queue worker:
+```bash
+php artisan queue:work --daemon
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## **1️⃣7️⃣ Monitor Logs & Test Application**
+Check Laravel logs:
+```bash
+tail -f /var/www/html/example-app/storage/logs/laravel.log
+```
+Check Apache logs:
+```bash
+sudo tail -f /var/log/apache2/error.log
+```
 
-## License
+Now, visit your EC2 IP in the browser:
+```
+http://your-ec2-ip-address/
+```
+Your Laravel project is now successfully deployed! 🚀
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
