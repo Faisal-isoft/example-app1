@@ -18,10 +18,14 @@ jobs:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ubuntu
-          APP_DIR: /var/www/html/example-app1  # Update your project path
+          APP_DIR: /var/www/html/example-app1
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
+          
+          # Verify SSH connection (Debug Step)
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "echo 'SSH Connection Successful'"
+          
           ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << 'EOF'
             cd $APP_DIR
             git pull origin master
