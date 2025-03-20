@@ -13,7 +13,7 @@
     <meta name="keywords" content="">
 
     <!-- title -->
-    <title>Techrun - IT Solutions And Technology HTML5 Template</title>
+    <title>AWS EC2</title>
 
     <!-- favicon -->
     <link rel="icon" type="image/x-icon" href="assets/img/logo/favicon.png">
